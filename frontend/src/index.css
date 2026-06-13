@@ -536,3 +536,98 @@ a:hover {
   to { transform: translateX(0); opacity: 1; }
 }
 
+
+
+/* Responsive Media Queries */
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 350px;
+  gap: 2rem;
+}
+
+@media (max-width: 900px) {
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .filters-bar > div {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+
+  .ticket-grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  }
+
+  .navbar {
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem;
+  }
+
+  .auth-box {
+    padding: 1.5rem;
+  }
+
+  h1 {
+    font-size: 1.5rem !important;
+  }
+}
+
+
+/* Mobile Menu */
+.mobile-menu-btn {
+  display: none;
+  background: transparent;
+  border: none;
+  color: var(--text-main);
+  cursor: pointer;
+}
+
+@media (max-width: 900px) {
+  .navbar {
+    flex-direction: row !important;
+    flex-wrap: wrap;
+  }
+
+  .mobile-menu-btn {
+    display: flex;
+  }
+
+  .nav-links {
+    display: none;
+    width: 100%;
+    flex-direction: column;
+    align-items: center;
+    padding-top: 1rem;
+  }
+
+  .nav-links.mobile-open {
+    display: flex;
+  }
+}
+
+
+/* Team Workload Table */
+.workload-row {
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  transition: all 0.2s ease;
+}
+.workload-row:hover {
+  background: rgba(99, 102, 241, 0.1);
+}
+
+.workload-select {
+  padding: 0.5rem 1rem;
+  background: rgba(15, 23, 42, 0.8);
+  color: white;
+  border: 1px solid rgba(99, 102, 241, 0.4);
+  border-radius: 8px;
+  outline: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.workload-select:hover {
+  border-color: var(--primary);
+  box-shadow: 0 0 8px rgba(99, 102, 241, 0.3);
+}

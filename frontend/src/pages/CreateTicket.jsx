@@ -52,7 +52,7 @@ const CreateTicket = () => {
       setLoading(true);
       setServerError('');
       await axios.post(API_URL, formData);
-      navigate('/tickets');
+      navigate('/tickets', { state: { successMsg: 'Ticket successfully created!' } });
     } catch (err) {
       setServerError(err.response?.data?.msg || 'Failed to create ticket. Please try again.');
       console.error(err);
