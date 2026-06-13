@@ -210,6 +210,10 @@ const Home = () => {
                   </span>
                   <span>•</span>
                   <span>{ticket.category}</span>
+                  <span>•</span>
+                  <span style={{ color: 'var(--text-main)', fontWeight: '500' }}>
+                    Agent: {ticket.assignedAgent || 'Unassigned'}
+                  </span>
                 </div>
 
                 <div style={{ marginTop: 'auto', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between' }}>

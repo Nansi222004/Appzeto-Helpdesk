@@ -40,11 +40,10 @@ const ticketSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // Optimistic locking: Increment version on every save
-ticketSchema.pre('save', function(next) {
+ticketSchema.pre('save', function() {
   if (!this.isNew) {
     this.version += 1;
   }
-  next();
 });
 
 module.exports = mongoose.model('Ticket', ticketSchema);

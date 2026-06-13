@@ -38,20 +38,20 @@ const Header = () => {
   return (
     <nav className="navbar">
       <div className="navbar-brand">
-        <Link to="/" style={{ textDecoration: 'none', color: 'inherit' }}>
-          MERN Auth
+        <Link to={isAuthenticated ? "/tickets" : "/"} style={{ textDecoration: 'none', color: 'inherit' }}>
+          Helpdesk-App
         </Link>
       </div>
       <div className="nav-links">
         {isAuthenticated ? (
           <div className="profile-menu-container" ref={dropdownRef}>
-            <div 
-              className="profile-avatar" 
+            <div
+              className="profile-avatar"
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
             >
               {getInitials()}
             </div>
-            
+
             {isDropdownOpen && (
               <div className="dropdown-menu">
                 <Link to="/profile" className="dropdown-item" onClick={() => setIsDropdownOpen(false)}>
@@ -66,9 +66,9 @@ const Header = () => {
                   <Shield size={18} />
                   Change Password
                 </Link>
-                
+
                 <div className="dropdown-divider"></div>
-                
+
                 <button onClick={handleLogout} className="dropdown-item text-danger">
                   <LogOut size={18} />
                   Logout
