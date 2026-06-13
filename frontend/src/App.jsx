@@ -9,6 +9,7 @@ import Profile from './pages/Profile';
 import ChangePassword from './pages/ChangePassword';
 import CreateTicket from './pages/CreateTicket';
 import TicketDetail from './pages/TicketDetail';
+import AgentWorkload from './pages/AgentWorkload';
 import Header from './components/Header';
 import Footer from './components/Footer';
 
@@ -67,6 +68,14 @@ function App() {
               element={
                 <PrivateRoute>
                   <ChangePassword />
+                </PrivateRoute>
+              } 
+            />
+            <Route 
+              path="/agent-workload" 
+              element={
+                <PrivateRoute>
+                  <AgentWorkload />
                 </PrivateRoute>
               } 
             />

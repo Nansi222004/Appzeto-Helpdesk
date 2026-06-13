@@ -8,14 +8,14 @@ const API_URL = 'http://localhost:5000/api/tickets';
 const TicketDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  
+
   const [ticket, setTicket] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  
+
   const [newComment, setNewComment] = useState('');
   const [submittingComment, setSubmittingComment] = useState(false);
-  
+
   // Conflict Modal State
   const [conflictModalOpen, setConflictModalOpen] = useState(false);
   const [serverState, setServerState] = useState(null);
@@ -24,28 +24,31 @@ const TicketDetail = () => {
   // SLA Live Countdown
   const [timeRemaining, setTimeRemaining] = useState('');
 
+  // Toast
+  const [errorToast, setErrorToast] = useState('');
+
   useEffect(() => {
     fetchTicket();
   }, [id]);
 
   useEffect(() => {
     if (!ticket) return;
-    
+
     const updateCountdown = () => {
       const now = new Date();
       const deadline = new Date(ticket.slaDeadline);
       const diff = deadline - now;
-      
+
       if (diff <= 0) {
         setTimeRemaining('Breached');
         return;
       }
-      
+
       const hours = Math.floor(diff / (1000 * 60 * 60));
       const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
       setTimeRemaining(`${hours}h ${mins}m remaining`);
     };
-    
+
     updateCountdown();
     const interval = setInterval(updateCountdown, 60000); // Update every minute
     return () => clearInterval(interval);
@@ -75,10 +78,10 @@ const TicketDetail = () => {
     if (!ticket) return;
     const oldStatus = ticket.status;
     const oldVersion = ticket.version;
-    
+
     // Optimistic Update
     setTicket({ ...ticket, status: newStatus });
-    
+
     try {
       const res = await axios.patch(`${API_URL}/${id}`, {
         version: oldVersion,
@@ -95,7 +98,8 @@ const TicketDetail = () => {
       } else {
         // Rollback
         setTicket({ ...ticket, status: oldStatus });
-        alert(err.response?.data?.msg || 'Failed to update status.');
+        setErrorToast(err.response?.data?.msg || 'Failed to update status. Reverted change.');
+        setTimeout(() => setErrorToast(''), 3000);
       }
     }
   };
@@ -109,7 +113,7 @@ const TicketDetail = () => {
     // Retry with server's version
     const retryVersion = serverState.version;
     const targetStatus = attemptedStatus;
-    
+
     try {
       const res = await axios.patch(`${API_URL}/${id}`, {
         version: retryVersion,
@@ -127,10 +131,30 @@ const TicketDetail = () => {
     }
   };
 
+  const handleAssign = async (newAgent) => {
+    try {
+      const res = await axios.patch(`${API_URL}/${id}`, {
+        version: ticket.version,
+        assignedAgent: newAgent === 'unassigned' ? null : newAgent
+      });
+      setTicket(res.data);
+      setErrorToast('Agent reassigned successfully!');
+      setTimeout(() => setErrorToast(''), 3000);
+    } catch (err) {
+      if (err.response?.status === 409) {
+        setServerState(err.response.data.serverState);
+        setConflictModalOpen(true);
+      } else {
+        setErrorToast(err.response?.data?.msg || 'Failed to reassign agent.');
+        setTimeout(() => setErrorToast(''), 3000);
+      }
+    }
+  };
+
   const handleAddComment = async (e) => {
     e.preventDefault();
     if (newComment.trim().length < 3) return;
-    
+
     try {
       setSubmittingComment(true);
       const res = await axios.post(`${API_URL}/${id}/comments`, { text: newComment });
@@ -149,12 +173,44 @@ const TicketDetail = () => {
 
   return (
     <div className="container" style={{ paddingTop: '2rem', paddingBottom: '2rem' }}>
-      <button className="btn" style={{ background: 'transparent', padding: 0, color: 'var(--primary)', marginBottom: '1rem' }} onClick={() => navigate('/tickets')}>
-        ← Back to List
-      </button>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1.5rem' }}>
+        <button
+          className="btn"
+          style={{
+            width: 'auto',
+            padding: '0.6rem 1.2rem',
+            background: 'rgba(99, 102, 241, 0.15)', // Indigo tinted glass
+            border: '1px solid var(--primary)', // Solid primary border
+            color: '#fff',
+            fontWeight: '600',
+            fontSize: '0.9rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+            boxShadow: '0 4px 12px rgba(99, 102, 241, 0.2)',
+            transition: 'all 0.2s ease'
+          }}
+          onClick={(e) => {
+            navigator.clipboard.writeText(window.location.href);
+            const btn = e.currentTarget;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '✓ Copied!';
+            btn.style.background = 'var(--primary)';
+            setTimeout(() => {
+              btn.innerHTML = originalText;
+              btn.style.background = 'rgba(99, 102, 241, 0.15)';
+            }, 2000);
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.background = 'var(--primary)'}
+          onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(99, 102, 241, 0.15)'}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+          Copy Ticket Link
+        </button>
+      </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '2rem' }}>
-        
+      <div className="detail-grid">
+
         {/* Main Content */}
         <div>
           <div className="glass-panel" style={{ padding: '2rem', marginBottom: '2rem' }}>
@@ -165,7 +221,7 @@ const TicketDetail = () => {
                 <span className={`badge badge-status-${ticket.status.replace(/\s+/g, '')}`}>{ticket.status}</span>
               </div>
             </div>
-            
+
             <p style={{ color: 'var(--text-muted)', marginBottom: '2rem', whiteSpace: 'pre-wrap' }}>
               {ticket.description}
             </p>
@@ -215,9 +271,9 @@ const TicketDetail = () => {
             ) : (
               <form onSubmit={handleAddComment}>
                 <div className="form-group">
-                  <textarea 
-                    className="form-control" 
-                    placeholder="Add a comment..." 
+                  <textarea
+                    className="form-control"
+                    placeholder="Add a comment..."
                     rows="3"
                     value={newComment}
                     onChange={(e) => setNewComment(e.target.value)}
@@ -234,15 +290,15 @@ const TicketDetail = () => {
 
         {/* Sidebar */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-          
+
           {/* Status & SLA Panel */}
           <div className="glass-panel" style={{ padding: '1.5rem' }}>
             <h3 style={{ marginBottom: '1.5rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem' }}>Ticket Actions</h3>
-            
+
             <div className="form-group">
               <label>Update Status</label>
-              <select 
-                className="filter-select" 
+              <select
+                className="filter-select"
                 style={{ width: '100%' }}
                 value={ticket.status}
                 onChange={(e) => handleStatusChange(e.target.value)}
@@ -252,6 +308,22 @@ const TicketDetail = () => {
                 {legalTransitions[ticket.status]?.map(s => (
                   <option key={s} value={s}>{s}</option>
                 ))}
+              </select>
+            </div>
+
+            <div className="form-group" style={{ marginTop: '1rem' }}>
+              <label>Reassign Agent</label>
+              <select
+                className="filter-select"
+                style={{ width: '100%' }}
+                value={ticket.assignedAgent || 'unassigned'}
+                onChange={(e) => handleAssign(e.target.value)}
+                disabled={ticket.status === 'Closed'}
+              >
+                <option value="unassigned">Unassigned</option>
+                <option value="Riya">Riya</option>
+                <option value="Karan">Karan</option>
+                <option value="Dev">Dev</option>
               </select>
             </div>
 
@@ -293,7 +365,7 @@ const TicketDetail = () => {
               <AlertTriangle /> Conflict Detected
             </h2>
             <p style={{ marginBottom: '2rem' }}>This ticket was changed by someone else while you were viewing it.</p>
-            
+
             <div style={{ display: 'flex', gap: '2rem', marginBottom: '2rem' }}>
               <div style={{ flex: 1, padding: '1rem', background: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
                 <h4 style={{ color: 'var(--primary)', marginBottom: '1rem' }}>Server State</h4>
@@ -315,6 +387,16 @@ const TicketDetail = () => {
                 Retry Mine on Top
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Error Toast */}
+      {errorToast && (
+        <div className="toast-container">
+          <div className="toast" style={{ background: '#ef4444' }}>
+            <AlertTriangle size={20} color="#fff" />
+            <span style={{ color: '#fff' }}>{errorToast}</span>
           </div>
         </div>
       )}

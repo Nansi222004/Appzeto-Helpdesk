@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
-import { Search, Filter, ArrowUpDown, AlertCircle, Clock } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Search, Filter, ArrowUpDown, AlertCircle, Clock, CheckCircle } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const API_URL = 'http://localhost:5000/api/tickets';
 
 const Home = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   
   // State
   const [tickets, setTickets] = useState([]);
@@ -26,6 +27,16 @@ const Home = () => {
   // Polling / Toast
   const [toastMessage, setToastMessage] = useState('');
   const previousTicketsRef = useRef([]);
+
+  // Check for navigation state messages
+  useEffect(() => {
+    if (location.state?.successMsg) {
+      setToastMessage(location.state.successMsg);
+      setTimeout(() => setToastMessage(''), 3000);
+      // Clear state so it doesn't reappear on refresh
+      window.history.replaceState({}, document.title);
+    }
+  }, [location]);
 
   // Debounce Search
   useEffect(() => {
@@ -106,15 +117,77 @@ const Home = () => {
     return 'sla-breached';
   };
 
+  const exportToCSV = () => {
+    if (tickets.length === 0) return alert('No tickets to export!');
+    
+    const headers = ['ID', 'Title', 'Category', 'Priority', 'Status', 'SLA', 'Agent', 'Created At'];
+    const rows = tickets.map(t => [
+      t._id,
+      `"${t.title.replace(/"/g, '""')}"`,
+      t.category,
+      t.priority,
+      t.status,
+      t.slaState,
+      t.assignedAgent || 'Unassigned',
+      new Date(t.createdAt).toLocaleString()
+    ]);
+    
+    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'appzeto_tickets.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="container" style={{ paddingTop: '2rem', paddingBottom: '2rem' }}>
       
       {/* Header & Create Button */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <h1 style={{ fontSize: '2rem' }}>Appzeto Helpdesk</h1>
-        <button className="btn btn-primary" style={{ width: 'auto' }} onClick={() => navigate('/create')}>
-          + New Ticket
-        </button>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+        <h1 style={{ fontSize: '2rem', margin: 0 }}>Ticket Dashboard</h1>
+        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+          <button 
+            className="btn" 
+            style={{ 
+              width: 'auto', 
+              padding: '0.6rem 1.2rem', 
+              background: 'rgba(99, 102, 241, 0.15)',
+              border: '1px solid var(--primary)',
+              color: '#fff',
+              fontWeight: '600',
+              fontSize: '0.9rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5rem',
+              boxShadow: '0 4px 12px rgba(99, 102, 241, 0.2)',
+              transition: 'all 0.2s ease'
+            }} 
+            onClick={(e) => {
+              exportToCSV();
+              const btn = e.currentTarget;
+              const originalText = btn.innerHTML;
+              btn.innerHTML = '✓ Downloaded!';
+              btn.style.background = 'var(--primary)';
+              setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.style.background = 'rgba(99, 102, 241, 0.15)';
+              }, 2000);
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.background = 'var(--primary)'}
+            onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(99, 102, 241, 0.15)'}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+            Download CSV
+          </button>
+          <button className="btn btn-primary" style={{ width: 'auto' }} onClick={() => navigate('/create')}>
+            + New Ticket
+          </button>
+        </div>
       </div>
 
       {/* Stats Bar */}
